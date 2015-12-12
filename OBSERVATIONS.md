@@ -32,35 +32,52 @@ year	| row_count
 2012	| 3282
 2013	| 24194
 
+Years are not integers. Some values represent ranges. This is a categorical field, not numeric.
+
 
 ```` sql
-SELECT i.category, count(*) AS row_count
+SELECT
+  i.category
+  ,count(DISTINCT i.indicatorid) AS indicator_count
+  ,count(*) AS row_count
 FROM indicators i
-GROUP BY i.category
-ORDER BY 1
+GROUP BY 1
 ````
 
 =>
 
-category	| row_count
---- | ---
-Alcohol	| 2744
-Arthritis	| 2640
-Asthma	| 4162
-Cancer	| 3411
-Cardiovascular Disease	| 9302
-Chronic Kidney Disease	| 817
-Chronic Obstructive Pulmonary Disease	| 9192
-Diabetes	| 7728
-Disability	| 55
-Immunization	| 330
-Mental Health	| 440
-Nutrition, physical activity, and weight status	| 4504
-Older Adults	| 1186
-Oral Health	| 1797
-Overarching Conditions	| 2741
-Reproductive Health	| 165
-Tobacco	| 2255
+category	|	indicator_count	|	row_count
+--- | --- | ---
+Alcohol	|	16	|	2744
+Arthritis	|	8	|	2640
+Asthma	|	9	|	4162
+Cancer	|	20	|	3411
+Cardiovascular Disease	|	18	|	9302
+Chronic Kidney Disease	|	4	|	817
+Chronic Obstructive Pulmonary Disease	|	16	|	9192
+Diabetes	|	20	|	7728
+Disability	|	1	|	55
+Immunization	|	1	|	330
+Mental Health	|	3	|	440
+Nutrition, physical activity, and weight status	|	37	|	4504
+Older Adults	|	4	|	1186
+Oral Health	|	9	|	1797
+Overarching Conditions	|	16	|	2741
+Reproductive Health	|	3	|	165
+Tobacco	|	16	|	2255
+
+```` sql
+SELECT
+  i.category
+  ,count(DISTINCT i.indicatorid) AS indicator_count
+  ,group_concat(DISTINCT i.indicatorid  ORDER BY i.indicatorid SEPARATOR ", ") AS indicators
+FROM indicators i
+GROUP BY 1
+````
+
+=>
+
+
 
 There is no data dictionary :disappointed:. Trying to make sense of the data...
 
@@ -188,6 +205,96 @@ FROM indicators i
 WHERE i.year = "2013" AND i.locationabbr = "CT"
 ````
 
+`locationabbr` and `locationdesc` describe `locationid` and vice-versa.
+
 `indicator` describes `indicatorid` and vice-versa.
 
-`locationabbr` and `locationdesc` describe `locationid` and vice-versa.
+`datavaluetype` and `datavalueunit` describe `indicator`.
+
+```` sql
+SELECT
+  i.year
+  ,i.locationid
+  ,i.indicatorid
+  ,i.stratificationid1
+ ,count(DISTINCT i.datasource) AS datasource_count -- none greater than 1
+ ,count(DISTINCT i.datavaluetype) AS data_value_type_count -- several greater than 1
+ ,count(DISTINCT i.datavalueunit) AS data_value_unit_count -- several greater than 1
+FROM indicators i
+GROUP BY 1,2,3,4
+````
+
+`Year`, `locationid`, `indicatorid`, and `stratificationid1` are insufficient to form a composite primary key.
+
+
+```` sql
+SELECT
+  i.year
+  ,i.locationid
+  ,i.indicatorid
+  ,i.stratificationid1
+  ,i.datavalueunit
+  ,i.datavaluetype
+ ,count(DISTINCT i.datasource) AS datasource_count -- none greater than 1
+ ,count(DISTINCT i.datavalue) AS data_value_count -- none greater than 1
+FROM indicators i
+GROUP BY 1,2,3,4,5,6
+-- HAVING data_value_count > 1
+````
+
+`Year`, `locationid`, `indicatorid`, `stratificationid1`, `datavalueunit`, and `datavaluetype` may be sufficient to form a composite primary key.
+
+```` sql
+SELECT
+  i.year
+  ,i.locationid
+  ,i.indicatorid
+  -- ,i.datasource
+  ,i.datavalueunit
+  ,i.datavaluetype
+  ,i.stratificationid1
+  ,i.datavalue
+  ,i.lowconfidenceinterval
+  ,i.highconfidenceinterval
+FROM indicators i
+WHERE i.year = "2013" AND i.locationabbr = "CT" AND i.category = "Mental Health"
+ORDER BY 1,2,3,6
+````
+
+=>
+
+year	|	locationid	|	indicatorid	|	datavalueunit	|	datavaluetype	|	stratificationid1	|	datavalue	|	lowconfidenceinterval	|	highconfidenceinterval
+---	|	---	|	---	|	---	|	---	|	---	|	---	|	---	|	---
+2013	|	09	|	MTH1_0	|	Number	|	Age-adjusted Mean	|	GENF	|	4.1	|	3.7	|	4.5
+2013	|	09	|	MTH1_0	|	Number	|	Crude Mean	|	GENF	|	4	|	3.6	|	4.3
+2013	|	09	|	MTH1_0	|	Number	|	Age-adjusted Mean	|	GENM	|	2.9	|	2.5	|	3.2
+2013	|	09	|	MTH1_0	|	Number	|	Crude Mean	|	GENM	|	2.9	|	2.6	|	3.3
+2013	|	09	|	MTH1_0	|	Number	|	Age-adjusted Mean	|	GENT	|	3.5	|	3.3	|	3.8
+2013	|	09	|	MTH1_0	|	Number	|	Crude Mean	|	GENT	|	3.5	|	3.2	|	3.7
+2013	|	09	|	MTH2_0	|	%	|	Crude Prevalence	|	GENF	|	13.5	|	11.2	|	16.3
+
+There can be many `datavaluetype` per `indicatorid` but `datavalueunit` looks like it depends on/describes `indicatorid`. Right?
+
+```` sql
+SELECT
+  i.year
+  ,i.locationid
+  ,i.indicatorid
+  ,i.stratificationid1
+  ,i.datavaluetype
+  ,count(DISTINCT i.datavalueunit) AS data_value_unit_count
+ ,count(DISTINCT i.datasource) AS datasource_count
+ ,count(DISTINCT i.datavalue) AS data_value_count
+FROM indicators i
+GROUP BY 1,2,3,4,5
+HAVING data_value_count > 1 OR datasource_count > 1 OR data_value_count > 1 -- zero rows
+````
+
+Indeed, this dataset row structure is a row per:
+ + year
+ + location
+ + indicator
+ + gender/strat
+ + data value type
+
+If a user chooses one value for each, comparisons can be made between values.
