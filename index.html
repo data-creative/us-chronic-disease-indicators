@@ -28,6 +28,9 @@
     <div id="map-footer"><p>Some foot notes.</p></div>
 
     <script type="text/javascript">
+
+        // CREATE BLANK MAP
+
         L.mapbox.accessToken = 'pk.eyJ1IjoiczJ0MiIsImEiOiJQVFE0UW1JIn0.0MfEvAJVxFx7BLGoL0USXA'
         var mapbox_map_id = 'mapbox.streets'
         var map_center = [52.26815737376817, -64.3359375]
@@ -38,8 +41,37 @@
             //.on("dragend", logMapView)
             //.on("zoomend", logMapView)
 
+        // DRAW STATE BOUNDARIES
 
+        var states_bounds = []
 
+        var state_name = "Connecticut"
+        // statesData comes from https://www.mapbox.com/mapbox.js/assets/data/us-states.js
+        var state_geojson_features = statesData.features.filter(function(feature){return feature.properties.name == state_name})
+        if(state_geojson_features.length > 0){
+            var state_geojson_feature = state_geojson_features[0]
+            //var state_name = state_geojson_feature.properties.name
+            var geojson_options = {
+                style: {
+                    fillColor: "#ccc", // colorScale(state_measure_value),
+                    color: "#eee", // colorScale(state_measure_value),
+                    weight: 2,
+                    opacity: .5, // opacityScale(state_measure_value),
+                    fillOpacity: .5, // opacityScale(state_measure_value),
+                    className: 'geojson state ' + state_name
+                }
+            }
+            var state = L.geoJson(state_geojson_feature, geojson_options)
+            //var popup_content = generatePopupContent(d, state_name)
+            //state.bindPopup(popup_content)
+            map.addLayer(state)
+
+            var state_bounds = state.getBounds()
+            states_bounds.push(state_bounds)
+        } // end if
+
+        console.log(states_bounds)
+        map.fitBounds(states_bounds)
 
     </script>
   </body>
