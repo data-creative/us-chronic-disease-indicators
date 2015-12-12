@@ -29,19 +29,31 @@
     <div id="map-container" style="height:40em; border:1px solid #000; margin:2em;"></div>
     <div id="map-footer"><p>Some foot notes.</p></div>
 
+
+
+
+
+
+
+
+
+
+
     <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
     <script type="text/javascript">
 
-        // CREATE BLANK MAP
+        // MAP
 
         L.mapbox.accessToken = 'pk.eyJ1IjoiczJ0MiIsImEiOiJQVFE0UW1JIn0.0MfEvAJVxFx7BLGoL0USXA'
         var mapbox_map_id = 'mapbox.streets'
         var map_center = [40.111688665595956, -97.3388671875]
         var map_zoom = 4
-        var map = L.mapbox.map('map-container', mapbox_map_id)
+        var map;
 
         function updateMap(){
-            map.remove()
+            if (typeof(map) != "undefined") {
+                map.remove()
+            }
             map = L.mapbox.map('map-container', mapbox_map_id, {scrollWheelZoom:false})
                   .setView(map_center, map_zoom)
                   .on("click", logMapClick)
@@ -58,77 +70,91 @@
             console.log("MAP VIEW: [" + current_center.lat + ", " + current_center.lng + "], " + map.getZoom()  )
         };
 
-        updateMap()
-
-        // CAPTURE SELECTIONS
+        // SELECTIONS AND REQUESTS
 
         var yearSelector = document.getElementById('year-selector');
         var indicatorSelector = document.getElementById('indicator-selector');
         var genderSelector = document.getElementById('gender-selector');
 
-        yearSelector.addEventListener("change", requestMap, false)
-        indicatorSelector.addEventListener("change", requestMap, false)
-        genderSelector.addEventListener("change", requestMap, false)
-
-        function requestMap(){
-            drawMap({
-              year: yearSelector.value,
-              indicator_id: indicatorSelector.value,
-              gender_id: genderSelector.value
-            })
-        };
-
-        requestMap()
+        yearSelector.addEventListener("change", drawMap, false);
+        indicatorSelector.addEventListener("change", drawMap, false);
+        genderSelector.addEventListener("change", drawMap, false);
 
         var zz;
+        var colorScale = d3.scale.linear();
         function drawMap(request){
-            updateMap()
+            var year = yearSelector.value
+            var strat_id = genderSelector.value
+            var indicator_id = indicatorSelector.value
+
+            // UPDATE COLOR PALETTE AND COLOR SCALE RANGE
+
+            switch(strat_id){
+            case "GENT":
+                var palette = colorbrewer.Purples[9]
+                break;
+            case "GENM":
+                var palette = colorbrewer.Blues[9]
+                break;
+            case "GENF":
+                var palette = colorbrewer.Reds[9]
+                break;
+            default:
+                var palette = colorbrewer.Greys[9]
+            }
+            colorScale.range([ palette[3], palette[6], palette[8] ])
+
+            updateMap() // clear previous map elements
+
             d3.csv('/data/query_results.csv', function(error, csv_data){
                 if (error) return console.warn(error);
                 console.log(csv_data.length)
-
                 var rows = csv_data.filter(function(row){
-                  return row["year"] == request.year && row["indicatorid"] == request.indicator_id && row["stratificationid1"] == request.gender_id
+                  return row["year"] == year && row["indicatorid"] == indicator_id && row["stratificationid1"] == strat_id
                 })
-                console.log(rows.length)
                 zz = rows
+                console.log(rows.length)
+                var values = rows.map(function(row){
+                  return row["datavalue"]
+                })
+                var quantiles = [ d3.min(values), d3.mean(values), d3.max(values) ]
 
-                //var states_bounds = []
+                // UPDATE COLOR SCALE DOMAIN
+
+                colorScale.domain(quantiles)
+
+                // DRAW STATE SHAPES
+
                 rows.forEach(function(row) {
 
-                    var state_geojson_features = statesData.features.filter(function(feature){return feature.properties.name == row["locationdesc"]})
+                    var state_geojson_features = statesData.features.filter(function(feature){
+                      return feature.properties.name == row["locationdesc"]
+                    })
                     if(state_geojson_features.length > 0){
                         var state_geojson_feature = state_geojson_features[0]
                         var state_name = state_geojson_feature.properties.name
-                        var state_measure_value = row["datavalue"]
-                        //console.log(state_measure_value)
-
-
+                        var state_value = row["datavalue"]
                         var geojson_options = {
                             style: {
-                                fillColor: "#ccc", // colorScale(state_measure_value),
-                                color: "#eee", // colorScale(state_measure_value),
+                                fillColor: colorScale(state_value),
+                                color: colorScale(state_value),
                                 weight: 2,
-                                opacity: .5, // opacityScale(state_measure_value),
-                                fillOpacity: .5, // opacityScale(state_measure_value),
+                                opacity: .5,
+                                fillOpacity: .5,
                                 className: 'geojson state ' + state_name
                             }
                         }
                         var state = L.geoJson(state_geojson_feature, geojson_options)
-                        //var popup_content = generatePopupContent(d, state_name)
-                        //state.bindPopup(popup_content)
+                        var popup_content = state_value // generatePopupContent(d, state_name)
+                        state.bindPopup(popup_content)
                         map.addLayer(state)
 
-                        //var state_bounds = state.getBounds()
-                        //states_bounds.push(state_bounds)
                     } // end if
                 }); // end forEach
-
-                //console.log(states_bounds)
-                //map.fitBounds(states_bounds)
-
             }); // end d3.csv
         }; // end drawMap
+
+        drawMap()
 
     </script>
   </body>
