@@ -298,3 +298,53 @@ Indeed, this dataset row structure is a row per:
  + data value type
 
 If a user chooses one value for each, comparisons can be made between values.
+
+For indicators of the "Mental Health" category, what kind of consistency exists across metrics across years?
+
+```` sql
+SELECT
+ i.year
+ ,i.indicatorid
+ ,count(DISTINCT i.locationid) AS location_count
+FROM indicators i
+WHERE i.category = "Mental Health"
+GROUP BY 1,2
+````
+
+=>
+
+year	|	indicatorid	|	location_count
+--- | --- | ---
+2009-2011	|	MTH3_0	|	55
+2013	|	MTH1_0	|	55
+2013	|	MTH2_0	|	55
+
+There is no consistency of the same metric being measured across multiple years.
+
+This means user selections of indicator and year are not independent, and should be limited/restricted to avoid confusion.
+
+The first iteration of this visualization should be based off the following data filters:
+
+```` sql
+SELECT
+  i.year
+  ,i.locationdesc
+  ,i.category
+  ,i.indicator
+ ,i.datavalueunit
+ ,i.datavalue
+ ,i.datavaluefootnote
+ ,i.gender
+ ,i.stratificationid1
+ ,i.indicatorid
+ ,i.lowconfidenceinterval
+ ,i.highconfidenceinterval
+FROM indicators i
+WHERE i.category = "Mental Health"
+  AND i.indicatorid = "MTH1_0"
+  AND i.datavaluetype = "Age-adjusted Mean"
+  AND i.year = "2013"
+ORDER BY i.indicatorid, i.gender
+````
+
+Methodology note: [@NedMccague](https://twitter.com/NedMccague) recommends using the "Age-adjusted Mean" when comparing values across states.

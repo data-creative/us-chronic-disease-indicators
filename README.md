@@ -7,11 +7,12 @@ View the data visualization live at _________.
 ## Contributing
 
 ```` sh
-git clone _________
+git clone git@github.com:s2t2/us-chronic-disease-indicators.git
+cd us-chronic-disease-indicators/
 ````
 
 Start a local webserver.
 
 ```` sh
-python ________
+python -m SimpleHTTPServer 8888 &
 ````
