@@ -28,6 +28,17 @@
     <div id="map-footer"><p>Some foot notes.</p></div>
 
     <script type="text/javascript">
+        L.mapbox.accessToken = 'pk.eyJ1IjoiczJ0MiIsImEiOiJQVFE0UW1JIn0.0MfEvAJVxFx7BLGoL0USXA'
+        var mapbox_map_id = 'mapbox.streets'
+        var map_center = [52.26815737376817, -64.3359375]
+        var map_zoom = 3
+        var map = L.mapbox.map('map-container', mapbox_map_id, {scrollWheelZoom:false})
+            .setView(map_center, map_zoom)
+            //.on("click", logMapClick)
+            //.on("dragend", logMapView)
+            //.on("zoomend", logMapView)
+
+
 
 
     </script>
