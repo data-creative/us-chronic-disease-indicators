@@ -14,64 +14,112 @@
     <select id="year-selector" title="Select a year or year range">
       <option value="2013" selected="selected">2013</option>
     </select>
+
     <select id="indicator-selector" title="Select an indicator">
-      <option value="MTH1_0" selected="selected" >MTH1_0 - Recent mentally unhealthy days among adults aged ≥18 years</option>
+      <option value="MTH1_0" selected="selected" >MTH1_0 Recent mentally unhealthy days among adults aged ≥18 years</option>
     </select>
+
     <select id="gender-selector" title="Select a gender">
-      <option value="GENT" selected="selected">Total</option>
+      <option value="GENT" selected="selected">All Genders</option>
       <option value="GENM">Male</option>
       <option value="GENF">Female</option>
     </select>
-    <button id="map-requestor" title="Refresh map based on selections">Update</button>
+    <!--button id="map-requestor" title="Refresh map based on selections">Update</button-->
 
-    <div id="map-container" style="height:40em; border:1px solid #000; margin-bottom:2em;"></div>
+    <div id="map-container" style="height:40em; border:1px solid #000; margin:2em;"></div>
     <div id="map-footer"><p>Some foot notes.</p></div>
 
+    <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
     <script type="text/javascript">
 
         // CREATE BLANK MAP
 
         L.mapbox.accessToken = 'pk.eyJ1IjoiczJ0MiIsImEiOiJQVFE0UW1JIn0.0MfEvAJVxFx7BLGoL0USXA'
         var mapbox_map_id = 'mapbox.streets'
-        var map_center = [52.26815737376817, -64.3359375]
-        var map_zoom = 3
-        var map = L.mapbox.map('map-container', mapbox_map_id, {scrollWheelZoom:false})
-            .setView(map_center, map_zoom)
-            //.on("click", logMapClick)
-            //.on("dragend", logMapView)
-            //.on("zoomend", logMapView)
+        var map_center = [40.111688665595956, -97.3388671875]
+        var map_zoom = 4
+        var map = L.mapbox.map('map-container', mapbox_map_id)
 
-        // DRAW STATE BOUNDARIES
+        function updateMap(){
+            map.remove()
+            map = L.mapbox.map('map-container', mapbox_map_id, {scrollWheelZoom:false})
+                  .setView(map_center, map_zoom)
+                  .on("click", logMapClick)
+                  .on("dragend", logMapView)
+                  .on("zoomend", logMapView)
+        };
 
-        var states_bounds = []
+        function logMapClick(cc){
+            console.log("MAP CLICKED ON GEOLOCATION: [" + cc.latlng.lat + ", " + cc.latlng.lng + "]")
+        };
 
-        var state_name = "Connecticut"
-        // statesData comes from https://www.mapbox.com/mapbox.js/assets/data/us-states.js
-        var state_geojson_features = statesData.features.filter(function(feature){return feature.properties.name == state_name})
-        if(state_geojson_features.length > 0){
-            var state_geojson_feature = state_geojson_features[0]
-            //var state_name = state_geojson_feature.properties.name
-            var geojson_options = {
-                style: {
-                    fillColor: "#ccc", // colorScale(state_measure_value),
-                    color: "#eee", // colorScale(state_measure_value),
-                    weight: 2,
-                    opacity: .5, // opacityScale(state_measure_value),
-                    fillOpacity: .5, // opacityScale(state_measure_value),
-                    className: 'geojson state ' + state_name
-                }
-            }
-            var state = L.geoJson(state_geojson_feature, geojson_options)
-            //var popup_content = generatePopupContent(d, state_name)
-            //state.bindPopup(popup_content)
-            map.addLayer(state)
+        function logMapView(){
+            var current_center = map.getCenter()
+            console.log("MAP VIEW: [" + current_center.lat + ", " + current_center.lng + "], " + map.getZoom()  )
+        };
 
-            var state_bounds = state.getBounds()
-            states_bounds.push(state_bounds)
-        } // end if
+        updateMap()
 
-        console.log(states_bounds)
-        map.fitBounds(states_bounds)
+        // CAPTURE SELECTIONS
+
+        var yearSelector = document.getElementById('year-selector');
+        var indicatorSelector = document.getElementById('indicator-selector');
+        var genderSelector = document.getElementById('gender-selector');
+
+        yearSelector.addEventListener("change", requestMap, false)
+        indicatorSelector.addEventListener("change", requestMap, false)
+        genderSelector.addEventListener("change", requestMap, false)
+
+        function requestMap(){
+            drawMap({
+              year: yearSelector.value,
+              indicator_id: indicatorSelector.value,
+              gender_id: genderSelector.value
+            })
+        };
+
+        requestMap()
+
+        var zz;
+        function drawMap(request){
+            updateMap()
+            d3.csv('/data/query_results.csv', function(error, csv_data){
+                if (error) return console.warn(error);
+                zz = csv_data
+                console.log(csv_data[0])
+
+                //var states_bounds = []
+                csv_data.forEach(function(row) {
+
+                    var state_geojson_features = statesData.features.filter(function(feature){return feature.properties.name == row["locationdesc"]})
+                    if(state_geojson_features.length > 0){
+                        var state_geojson_feature = state_geojson_features[0]
+                        var state_name = state_geojson_feature.properties.name
+                        var geojson_options = {
+                            style: {
+                                fillColor: "#ccc", // colorScale(state_measure_value),
+                                color: "#eee", // colorScale(state_measure_value),
+                                weight: 2,
+                                opacity: .5, // opacityScale(state_measure_value),
+                                fillOpacity: .5, // opacityScale(state_measure_value),
+                                className: 'geojson state ' + state_name
+                            }
+                        }
+                        var state = L.geoJson(state_geojson_feature, geojson_options)
+                        //var popup_content = generatePopupContent(d, state_name)
+                        //state.bindPopup(popup_content)
+                        map.addLayer(state)
+
+                        //var state_bounds = state.getBounds()
+                        //states_bounds.push(state_bounds)
+                    } // end if
+                }); // end forEach
+
+                //console.log(states_bounds)
+                //map.fitBounds(states_bounds)
+
+            }); // end d3.csv
+        }; // end drawMap
 
     </script>
   </body>
