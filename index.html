@@ -85,16 +85,25 @@
             updateMap()
             d3.csv('/data/query_results.csv', function(error, csv_data){
                 if (error) return console.warn(error);
-                zz = csv_data
-                console.log(csv_data[0])
+                console.log(csv_data.length)
+
+                var rows = csv_data.filter(function(row){
+                  return row["year"] == request.year && row["indicatorid"] == request.indicator_id && row["stratificationid1"] == request.gender_id
+                })
+                console.log(rows.length)
+                zz = rows
 
                 //var states_bounds = []
-                csv_data.forEach(function(row) {
+                rows.forEach(function(row) {
 
                     var state_geojson_features = statesData.features.filter(function(feature){return feature.properties.name == row["locationdesc"]})
                     if(state_geojson_features.length > 0){
                         var state_geojson_feature = state_geojson_features[0]
                         var state_name = state_geojson_feature.properties.name
+                        var state_measure_value = row["datavalue"]
+                        //console.log(state_measure_value)
+
+
                         var geojson_options = {
                             style: {
                                 fillColor: "#ccc", // colorScale(state_measure_value),
