@@ -124,7 +124,7 @@
             console.log(data_path)
             var request_url = base_url + data_path;
             console.log(request_url)
-            d3.csv(request_url, function(error, csv_data){
+            d3.csv("data/query_results.csv", function(error, csv_data){
                 if (error) return console.warn(error);
                 rows = csv_data.filter(function(row){
                   return row["year"] == year && row["indicatorid"] == indicator_id && row["stratificationid1"] == strat_id
