@@ -91,8 +91,9 @@
         function drawMap(request){
             var year = yearSelector.value
             var strat_id = genderSelector.value
+            var strat_name = genderSelector[genderSelector.selectedIndex].textContent.trim()
             var indicator_id = indicatorSelector.value
-            var indicator_desc = indicatorSelector.textContent.trim()
+            var indicator_desc = indicatorSelector[indicatorSelector.selectedIndex].textContent.trim()
 
             // UPDATE COLOR PALETTE AND COLOR SCALE RANGE
 
@@ -109,7 +110,7 @@
             default:
                 var palette = colorbrewer.Greys[9]
             }
-            colorScale.range([ palette[3], palette[6], palette[8] ])
+            colorScale.range([ palette[2], palette[5], palette[8] ])
 
             updateMap()
 
@@ -134,16 +135,18 @@
                         var geojson_options = {
                             style: {
                                 fillColor: colorScale(state_value),
-                                color: colorScale(state_value),
-                                weight: 2,
-                                opacity: .5,
-                                fillOpacity: .5,
+                                color: "#fff", //colorScale(state_value),
+                                weight: 1.5,
+                                opacity: .85,
+                                fillOpacity: .75,
                                 className: 'geojson state ' + state_name
                             }
                         }
                         var state = L.geoJson(state_geojson_feature, geojson_options)
                         var popup_content = "<strong>State</strong>: " + state_name + "<br/>" +
+                            "<strong>Year</strong>: " + year + "<br/>" +
                             "<strong>Indicator</strong>: " + indicator_desc + "<br/>" +
+                            "<strong>Gender</strong>: " + strat_name + "<br/>" +
                             "<strong>Age-adjusted Mean</strong>: " + state_value + "<br/>" +
                             "<strong>Confidence Interval</strong>: " + state_low + " to " + state_high
 
