@@ -16,7 +16,7 @@
     </select>
 
     <select id="indicator-selector" title="Select an indicator">
-      <option value="MTH1_0" selected="selected" >MTH1_0 Recent mentally unhealthy days among adults aged ≥18 years</option>
+      <option value="MTH1_0" selected="selected" >Recent mentally unhealthy days among adults aged ≥18 years</option>
     </select>
 
     <select id="gender-selector" title="Select a gender">
@@ -80,12 +80,13 @@
         indicatorSelector.addEventListener("change", drawMap, false);
         genderSelector.addEventListener("change", drawMap, false);
 
-        var zz;
+        var rows;
         var colorScale = d3.scale.linear();
         function drawMap(request){
             var year = yearSelector.value
             var strat_id = genderSelector.value
             var indicator_id = indicatorSelector.value
+            var indicator_desc = indicatorSelector.textContent.trim()
 
             // UPDATE COLOR PALETTE AND COLOR SCALE RANGE
 
@@ -104,36 +105,26 @@
             }
             colorScale.range([ palette[3], palette[6], palette[8] ])
 
-            updateMap() // clear previous map elements
+            updateMap()
 
             d3.csv('/data/query_results.csv', function(error, csv_data){
                 if (error) return console.warn(error);
-                console.log(csv_data.length)
-                var rows = csv_data.filter(function(row){
+                rows = csv_data.filter(function(row){
                   return row["year"] == year && row["indicatorid"] == indicator_id && row["stratificationid1"] == strat_id
                 })
-                zz = rows
-                console.log(rows.length)
-                var values = rows.map(function(row){
-                  return row["datavalue"]
-                })
+                var values = rows.map(function(row){return row["datavalue"]})
                 var quantiles = [ d3.min(values), d3.mean(values), d3.max(values) ]
-
-                // UPDATE COLOR SCALE DOMAIN
 
                 colorScale.domain(quantiles)
 
-                // DRAW STATE SHAPES
-
                 rows.forEach(function(row) {
-
-                    var state_geojson_features = statesData.features.filter(function(feature){
-                      return feature.properties.name == row["locationdesc"]
-                    })
+                    var state_geojson_features = statesData.features.filter(function(feature){ return feature.properties.name == row["locationdesc"]; })
                     if(state_geojson_features.length > 0){
                         var state_geojson_feature = state_geojson_features[0]
                         var state_name = state_geojson_feature.properties.name
                         var state_value = row["datavalue"]
+                        var state_high = row["highconfidenceinterval"]
+                        var state_low = row["lowconfidenceinterval"]
                         var geojson_options = {
                             style: {
                                 fillColor: colorScale(state_value),
@@ -145,7 +136,11 @@
                             }
                         }
                         var state = L.geoJson(state_geojson_feature, geojson_options)
-                        var popup_content = state_value // generatePopupContent(d, state_name)
+                        var popup_content = "<strong>State</strong>: " + state_name + "<br/>" +
+                            "<strong>Indicator</strong>: " + indicator_desc + "<br/>" +
+                            "<strong>Age-adjusted Mean</strong>: " + state_value + "<br/>" +
+                            "<strong>Confidence Interval</strong>: " + state_low + " to " + state_high
+
                         state.bindPopup(popup_content)
                         map.addLayer(state)
 
