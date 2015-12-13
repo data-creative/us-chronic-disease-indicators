@@ -2,7 +2,7 @@
 
 ## Usage
 
-View the data visualization live at _________.
+View the data visualization live at http://s2t2.github.io/us-chronic-disease-indicators/.
 
 ## Contributing
 

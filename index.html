@@ -6,7 +6,7 @@
     <link href='https://api.tiles.mapbox.com/mapbox.js/v2.1.4/mapbox.css' rel='stylesheet' />
     <script src='https://api.tiles.mapbox.com/mapbox.js/v2.1.4/mapbox.js'></script>
     <script src='https://www.mapbox.com/mapbox.js/assets/data/us-states.js'></script>
-    <script src='/assets/colorbrewer.v1.min.js'></script>
+    <script src='http://d3js.org/colorbrewer.v1.min.js'></script>
   </head>
   <body>
     <h1>US Chronic Disease Indicators</h1>
@@ -27,7 +27,13 @@
     <!--button id="map-requestor" title="Refresh map based on selections">Update</button-->
 
     <div id="map-container" style="height:40em; border:1px solid #000; margin:2em;"></div>
-    <div id="map-footer"><p>Some foot notes.</p></div>
+    <div id="map-footer">
+      <p>
+        <a href="http://s2t2.github.io/us-chronic-disease-indicators">view</a> |
+        <a href="https://github.com/s2t2/us-chronic-disease-indicators">source</a> |
+        <a href="http://catalog.data.gov/dataset/u-s-chronic-disease-indicators-cdi">data</a>
+      </p>
+    </div>
 
 
 
@@ -107,7 +113,13 @@
 
             updateMap()
 
-            d3.csv('/data/query_results.csv', function(error, csv_data){
+            var base_url = ""
+            if (window.location.hostname != "localhost") {
+              base_url += "us-chronic-disease-indicators"
+            }
+            var data_path = '/data/query_results.csv'
+            var request_url = base_url + data_path;
+            d3.csv(request_url, function(error, csv_data){
                 if (error) return console.warn(error);
                 rows = csv_data.filter(function(row){
                   return row["year"] == year && row["indicatorid"] == indicator_id && row["stratificationid1"] == strat_id
