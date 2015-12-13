@@ -113,17 +113,6 @@
 
             updateMap()
 
-            var base_url = ""
-            console.log(window.location.hostname)
-            console.log(base_url)
-            if (window.location.hostname != "localhost") {
-              base_url = "us-chronic-disease-indicators"
-              console.log(base_url)
-            }
-            var data_path = '/data/query_results.csv'
-            console.log(data_path)
-            var request_url = base_url + data_path;
-            console.log(request_url)
             d3.csv("data/query_results.csv", function(error, csv_data){
                 if (error) return console.warn(error);
                 rows = csv_data.filter(function(row){
